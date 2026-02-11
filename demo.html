@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Prediction Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+        }
+        
+        .api-url {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .api-url input {
+            width: 100%;
+            max-width: 600px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .teams-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .team-card {
+            background: #f9f9f9;
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .team-card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .h2h-section {
+            background: #f9f9f9;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .h2h-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .h2h-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        
+        .predict-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .predict-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .predict-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .result-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .prediction-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .probability-bar {
+            background: #e0e0e0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            color: white;
+            font-weight: bold;
+            transition: width 0.5s ease;
+        }
+        
+        .score-display {
+            text-align: center;
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0;
+        }
+        
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .teams-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .h2h-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚽ Football Match Predictor</h1>
+        <p class="subtitle">AI-Powered Match Result Prediction</p>
+        
+        <div class="api-url">
+            <label>API URL:</label>
+            <input type="text" id="apiUrl" value="http://localhost:5000" placeholder="http://localhost:5000 hoặc https://your-app.onrender.com">
+        </div>
+        
+        <div class="teams-container">
+            <div class="team-card">
+                <h2>🏠 Đội Nhà</h2>
+                <div class="form-group">
+                    <label>Tên đội:</label>
+                    <input type="text" id="homeTeamName" value="Manchester City">
+                </div>
+                <div class="form-group">
+                    <label>TB Bàn thắng ghi:</label>
+                    <input type="number" step="0.1" id="homeGoalsScored" value="2.1">
+                </div>
+                <div class="form-group">
+                    <label>TB Bàn thắng thủng:</label>
+                    <input type="number" step="0.1" id="homeGoalsConceded" value="1.0">
+                </div>
+                <div class="form-group">
+                    <label>TB xG:</label>
+                    <input type="number" step="0.1" id="homeXG" value="1.9">
+                </div>
+                <div class="form-group">
+                    <label>TB xG conceded:</label>
+                    <input type="number" step="0.1" id="homeXGConceded" value="1.2">
+                </div>
+                <div class="form-group">
+                    <label>TB Shots:</label>
+                    <input type="number" step="0.1" id="homeShots" value="15.0">
+                </div>
+                <div class="form-group">
+                    <label>TB Shots conceded:</label>
+                    <input type="number" step="0.1" id="homeShotsConceded" value="10.0">
+                </div>
+                <div class="form-group">
+                    <label>PPDA:</label>
+                    <input type="number" step="0.1" id="homePPDA" value="8.5">
+                </div>
+                <div class="form-group">
+                    <label>Deep:</label>
+                    <input type="number" step="0.1" id="homeDeep" value="6.0">
+                </div>
+                <div class="form-group">
+                    <label>Recent Form (5 trận: 0=L, 1=D, 2=W):</label>
+                    <input type="text" id="homeForm" value="2,2,1,2,2">
+                </div>
+                <div class="form-group">
+                    <label>Clean Sheet Rate (0-1):</label>
+                    <input type="number" step="0.01" id="homeCleanSheets" value="0.4">
+                </div>
+            </div>
+            
+            <div class="team-card">
+                <h2>✈️ Đội Khách</h2>
+                <div class="form-group">
+                    <label>Tên đội:</label>
+                    <input type="text" id="awayTeamName" value="Liverpool">
+                </div>
+                <div class="form-group">
+                    <label>TB Bàn thắng ghi:</label>
+                    <input type="number" step="0.1" id="awayGoalsScored" value="1.8">
+                </div>
+                <div class="form-group">
+                    <label>TB Bàn thắng thủng:</label>
+                    <input type="number" step="0.1" id="awayGoalsConceded" value="1.3">
+                </div>
+                <div class="form-group">
+                    <label>TB xG:</label>
+                    <input type="number" step="0.1" id="awayXG" value="1.7">
+                </div>
+                <div class="form-group">
+                    <label>TB xG conceded:</label>
+                    <input type="number" step="0.1" id="awayXGConceded" value="1.4">
+                </div>
+                <div class="form-group">
+                    <label>TB Shots:</label>
+                    <input type="number" step="0.1" id="awayShots" value="13.0">
+                </div>
+                <div class="form-group">
+                    <label>TB Shots conceded:</label>
+                    <input type="number" step="0.1" id="awayShotsConceded" value="11.0">
+                </div>
+                <div class="form-group">
+                    <label>PPDA:</label>
+                    <input type="number" step="0.1" id="awayPPDA" value="9.0">
+                </div>
+                <div class="form-group">
+                    <label>Deep:</label>
+                    <input type="number" step="0.1" id="awayDeep" value="5.5">
+                </div>
+                <div class="form-group">
+                    <label>Recent Form (5 trận: 0=L, 1=D, 2=W):</label>
+                    <input type="text" id="awayForm" value="1,2,0,2,1">
+                </div>
+                <div class="form-group">
+                    <label>Clean Sheet Rate (0-1):</label>
+                    <input type="number" step="0.01" id="awayCleanSheets" value="0.3">
+                </div>
+            </div>
+        </div>
+        
+        <div class="h2h-section">
+            <h2>📊 Lịch sử đối đầu</h2>
+            <div class="h2h-grid">
+                <div class="form-group">
+                    <label>Home Wins:</label>
+                    <input type="number" id="h2hHomeWins" value="4">
+                </div>
+                <div class="form-group">
+                    <label>Draws:</label>
+                    <input type="number" id="h2hDraws" value="2">
+                </div>
+                <div class="form-group">
+                    <label>Away Wins:</label>
+                    <input type="number" id="h2hAwayWins" value="1">
+                </div>
+            </div>
+        </div>
+        
+        <button class="predict-btn" onclick="predictMatch()">🔮 Dự đoán kết quả</button>
+        
+        <div class="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px;">Đang xử lý...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="results" id="results">
+            <div class="result-card">
+                <h3>🎯 Kết quả dự đoán: <span id="mainResult"></span></h3>
+                
+                <div class="prediction-item">
+                    <strong>Home Win</strong>
+                    <div class="probability-bar">
+                        <div class="probability-fill" id="homeWinBar"></div>
+                    </div>
+                </div>
+                
+                <div class="prediction-item">
+                    <strong>Draw</strong>
+                    <div class="probability-bar">
+                        <div class="probability-fill" id="drawBar"></div>
+                    </div>
+                </div>
+                
+                <div class="prediction-item">
+                    <strong>Away Win</strong>
+                    <div class="probability-bar">
+                        <div class="probability-fill" id="awayWinBar"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="result-card">
+                <h3>⚽ Dự đoán tỉ số</h3>
+                <div class="score-display">
+                    <span id="homeScore">0</span> - <span id="awayScore">0</span>
+                </div>
+                <p style="text-align: center; color: #666;">
+                    Tổng bàn thắng: <strong id="totalGoals">0.0</strong>
+                </p>
+            </div>
+            
+            <div class="result-card">
+                <h3>📈 Over/Under 2.5</h3>
+                <div class="prediction-item">
+                    <strong>Prediction: <span id="ouPrediction"></span></strong>
+                </div>
+                <div class="prediction-item">
+                    <strong>Over 2.5</strong>
+                    <div class="probability-bar">
+                        <div class="probability-fill" id="overBar"></div>
+                    </div>
+                </div>
+                <div class="prediction-item">
+                    <strong>Under 2.5</strong>
+                    <div class="probability-bar">
+                        <div class="probability-fill" id="underBar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function predictMatch() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const loadingDiv = document.querySelector('.loading');
+            const resultsDiv = document.getElementById('results');
+            const errorDiv = document.getElementById('error');
+            const predictBtn = document.querySelector('.predict-btn');
+            
+            // Hide previous results
+            resultsDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
+            predictBtn.disabled = true;
+            
+            // Parse form data
+            const homeForm = document.getElementById('homeForm').value.split(',').map(x => parseInt(x.trim()));
+            const awayForm = document.getElementById('awayForm').value.split(',').map(x => parseInt(x.trim()));
+            
+            const payload = {
+                home_team: {
+                    name: document.getElementById('homeTeamName').value,
+                    avg_goals_scored: parseFloat(document.getElementById('homeGoalsScored').value),
+                    avg_goals_conceded: parseFloat(document.getElementById('homeGoalsConceded').value),
+                    avg_xg: parseFloat(document.getElementById('homeXG').value),
+                    avg_xg_conceded: parseFloat(document.getElementById('homeXGConceded').value),
+                    avg_shots: parseFloat(document.getElementById('homeShots').value),
+                    avg_shots_conceded: parseFloat(document.getElementById('homeShotsConceded').value),
+                    avg_ppda: parseFloat(document.getElementById('homePPDA').value),
+                    avg_deep: parseFloat(document.getElementById('homeDeep').value),
+                    recent_form: homeForm,
+                    clean_sheets_rate: parseFloat(document.getElementById('homeCleanSheets').value)
+                },
+                away_team: {
+                    name: document.getElementById('awayTeamName').value,
+                    avg_goals_scored: parseFloat(document.getElementById('awayGoalsScored').value),
+                    avg_goals_conceded: parseFloat(document.getElementById('awayGoalsConceded').value),
+                    avg_xg: parseFloat(document.getElementById('awayXG').value),
+                    avg_xg_conceded: parseFloat(document.getElementById('awayXGConceded').value),
+                    avg_shots: parseFloat(document.getElementById('awayShots').value),
+                    avg_shots_conceded: parseFloat(document.getElementById('awayShotsConceded').value),
+                    avg_ppda: parseFloat(document.getElementById('awayPPDA').value),
+                    avg_deep: parseFloat(document.getElementById('awayDeep').value),
+                    recent_form: awayForm,
+                    clean_sheets_rate: parseFloat(document.getElementById('awayCleanSheets').value)
+                },
+                h2h_history: {
+                    home_wins: parseInt(document.getElementById('h2hHomeWins').value),
+                    draws: parseInt(document.getElementById('h2hDraws').value),
+                    away_wins: parseInt(document.getElementById('h2hAwayWins').value)
+                }
+            };
+            
+            try {
+                const response = await fetch(`${apiUrl}/predict-simple`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'API request failed');
+                }
+                
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    throw new Error(data.error || 'Prediction failed');
+                }
+                
+            } catch (error) {
+                errorDiv.textContent = `Lỗi: ${error.message}. Kiểm tra API URL và đảm bảo server đang chạy.`;
+                errorDiv.style.display = 'block';
+            } finally {
+                loadingDiv.style.display = 'none';
+                predictBtn.disabled = false;
+            }
+        }
+        
+        function displayResults(data) {
+            const pred = data.predictions;
+            
+            // Main result
+            document.getElementById('mainResult').textContent = pred['1x2'].result;
+            
+            // 1x2 Probabilities
+            setProbabilityBar('homeWinBar', pred['1x2'].probabilities.home_win);
+            setProbabilityBar('drawBar', pred['1x2'].probabilities.draw);
+            setProbabilityBar('awayWinBar', pred['1x2'].probabilities.away_win);
+            
+            // Score
+            document.getElementById('homeScore').textContent = pred.score.home;
+            document.getElementById('awayScore').textContent = pred.score.away;
+            document.getElementById('totalGoals').textContent = pred.score.total;
+            
+            // Over/Under
+            document.getElementById('ouPrediction').textContent = pred.over_under.prediction;
+            setProbabilityBar('overBar', pred.over_under.probabilities.over);
+            setProbabilityBar('underBar', pred.over_under.probabilities.under);
+            
+            // Show results
+            document.getElementById('results').style.display = 'block';
+            
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function setProbabilityBar(id, probability) {
+            const percentage = (probability * 100).toFixed(1);
+            const bar = document.getElementById(id);
+            bar.style.width = percentage + '%';
+            bar.textContent = percentage + '%';
+        }
+    </script>
+</body>
+</html>
